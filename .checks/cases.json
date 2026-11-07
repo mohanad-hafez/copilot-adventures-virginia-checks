@@ -1,0 +1,238 @@
+{
+  "id": "09098633",
+  "task": "dailyReport",
+  "cases": [
+    {
+      "id": "quiet-period",
+      "partition": "development",
+      "input": {
+        "now": "2026-11-07T12:00:00.000Z",
+        "commits": [],
+        "pull_requests": [],
+        "issues": [],
+        "workflow_runs": []
+      },
+      "expected": {
+        "counts": {
+          "commits": 0,
+          "pull_requests": 0,
+          "issues": 0,
+          "failures": 0
+        },
+        "action_count": 1,
+        "body_contains": [
+          "No commits in the past 24 hours.",
+          "No pull request activity in the past 24 hours.",
+          "No issue activity in the past 24 hours.",
+          "No CI/CD failures in the past 24 hours."
+        ]
+      }
+    },
+    {
+      "id": "one-commit",
+      "partition": "development",
+      "input": {
+        "now": "2026-11-07T12:00:00.000Z",
+        "commits": [
+          {
+            "sha": "abcdef123456789",
+            "pushed_at": "2026-11-07T00:00:00.000Z",
+            "author": "example",
+            "message": "Update a file\n\nAdditional details"
+          }
+        ],
+        "pull_requests": [],
+        "issues": [],
+        "workflow_runs": []
+      },
+      "expected": {
+        "counts": {
+          "commits": 1,
+          "pull_requests": 0,
+          "issues": 0,
+          "failures": 0
+        },
+        "action_count": 1,
+        "body_contains": [
+          "abcdef1",
+          "Update a file"
+        ]
+      }
+    },
+    {
+      "id": "time-boundaries",
+      "partition": "held_out",
+      "input": {
+        "now": "2026-11-07T12:00:00.000Z",
+        "commits": [
+          {
+            "sha": "abcdef123456789",
+            "pushed_at": "2026-11-06T12:00:00.000Z",
+            "author": "example",
+            "message": "Update a file\n\nAdditional details"
+          },
+          {
+            "sha": "abcdef123456789",
+            "pushed_at": "2026-11-06T11:59:59.000Z",
+            "author": "example",
+            "message": "Update a file\n\nAdditional details"
+          },
+          {
+            "sha": "abcdef123456789",
+            "pushed_at": "2026-11-07T12:00:01.000Z",
+            "author": "example",
+            "message": "Update a file\n\nAdditional details"
+          }
+        ],
+        "pull_requests": [],
+        "issues": [],
+        "workflow_runs": []
+      },
+      "expected": {
+        "counts": {
+          "commits": 1,
+          "pull_requests": 0,
+          "issues": 0,
+          "failures": 0
+        },
+        "action_count": 1
+      }
+    },
+    {
+      "id": "merged-old-pr",
+      "partition": "held_out",
+      "input": {
+        "now": "2026-11-07T12:00:00.000Z",
+        "commits": [],
+        "pull_requests": [
+          {
+            "number": 2,
+            "title": "Change",
+            "author": "example",
+            "state": "closed",
+            "created_at": "2026-10-08T12:00:00.000Z",
+            "merged_at": "2026-11-07T07:12:00.000Z"
+          }
+        ],
+        "issues": [],
+        "workflow_runs": []
+      },
+      "expected": {
+        "counts": {
+          "commits": 0,
+          "pull_requests": 1,
+          "issues": 0,
+          "failures": 0
+        },
+        "action_count": 1,
+        "body_contains": [
+          "#2",
+          "merged"
+        ]
+      }
+    },
+    {
+      "id": "closed-old-issue",
+      "partition": "held_out",
+      "input": {
+        "now": "2026-11-07T12:00:00.000Z",
+        "commits": [],
+        "pull_requests": [],
+        "issues": [
+          {
+            "number": 5,
+            "title": "Bug",
+            "author": "example",
+            "state": "closed",
+            "created_at": "2026-09-08T12:00:00.000Z",
+            "closed_at": "2026-11-07T04:48:00.000Z"
+          }
+        ],
+        "workflow_runs": []
+      },
+      "expected": {
+        "counts": {
+          "commits": 0,
+          "pull_requests": 0,
+          "issues": 1,
+          "failures": 0
+        },
+        "action_count": 1,
+        "body_contains": [
+          "#5",
+          "closed"
+        ]
+      }
+    },
+    {
+      "id": "exclude-pr-from-issues",
+      "partition": "held_out",
+      "input": {
+        "now": "2026-11-07T12:00:00.000Z",
+        "commits": [],
+        "pull_requests": [],
+        "issues": [
+          {
+            "number": 6,
+            "created_at": "2026-11-07T12:00:00.000Z",
+            "pull_request": {}
+          }
+        ],
+        "workflow_runs": []
+      },
+      "expected": {
+        "counts": {
+          "commits": 0,
+          "pull_requests": 0,
+          "issues": 0,
+          "failures": 0
+        },
+        "action_count": 1
+      }
+    },
+    {
+      "id": "only-failed-ci",
+      "partition": "held_out",
+      "input": {
+        "now": "2026-11-07T12:00:00.000Z",
+        "commits": [],
+        "pull_requests": [],
+        "issues": [],
+        "workflow_runs": [
+          {
+            "conclusion": "failure",
+            "name": "build",
+            "event": "push",
+            "html_url": "https://example.invalid/run/1",
+            "updated_at": "2026-11-07T09:36:00.000Z"
+          },
+          {
+            "conclusion": "success",
+            "updated_at": "2026-11-07T12:00:00.000Z"
+          },
+          {
+            "conclusion": "cancelled",
+            "updated_at": "2026-11-07T12:00:00.000Z"
+          },
+          {
+            "conclusion": "failure",
+            "updated_at": "2026-11-05T12:00:00.000Z"
+          }
+        ]
+      },
+      "expected": {
+        "counts": {
+          "commits": 0,
+          "pull_requests": 0,
+          "issues": 0,
+          "failures": 1
+        },
+        "action_count": 1,
+        "body_contains": [
+          "build",
+          "https://example.invalid/run/1"
+        ]
+      }
+    }
+  ]
+}
