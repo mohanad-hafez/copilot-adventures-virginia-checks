@@ -1,0 +1,41 @@
+name: Daily activity
+on:
+  push:
+    branches: [replacement-daily-activity-01]
+    paths: [.github/daily-activity-ready]
+permissions:
+  contents: read
+concurrency:
+  group: daily-activity
+  cancel-in-progress: false
+jobs:
+  report:
+    if: github.repository == 'mohanad-hafez/copilot-adventures-virginia-checks'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: read
+      actions: read
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Check collection boundaries
+        run: node .github/scripts/daily_activity.test.mjs
+      - name: Report recorded activity
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3
+        with:
+          retries: 0
+          script: |
+            const {runDaily}=await import(process.env.GITHUB_WORKSPACE+'/.github/scripts/daily_activity.mjs');
+            await runDaily({github,context});
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: daily-activity
+          path: |
+            daily-capture.json
+            daily-publication.json
+          retention-days: 7

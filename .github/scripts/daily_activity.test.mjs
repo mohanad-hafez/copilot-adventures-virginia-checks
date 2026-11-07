@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import {collectActivity,reportActivity} from './daily_activity.mjs';
+const end='2026-11-07T21:00:00Z',repository='mohanad-hafez/copilot-adventures-virginia-checks';
+const before='a'.repeat(40),head='b'.repeat(40);
+const calls=[];
+const read=async p=>{calls.push(p);if(p.includes('/events?'))return[{id:'p1',type:'PushEvent',created_at:'2026-11-07T20:00:00Z',payload:{before,head,ref:'refs/heads/feature'}}];if(p.includes('/compare/'))return{total_commits:1,commits:[{sha:head,author:{login:'owner'},commit:{message:'Old-authored commit pushed today',author:{name:'owner',date:'2020-01-01T00:00:00Z'}}}]};if(p.includes('/actions/runs?'))return{total_count:1,workflow_runs:[{id:1,name:'Long run',event:'push',status:'completed',conclusion:'failure',created_at:'2026-11-01T00:00:00Z',updated_at:'2026-11-07T20:00:00Z',html_url:'https://github.com/'+repository+'/actions/runs/1'}]};throw Error(p)};
+const data=await collectActivity({repository,end,read});
+assert.equal(data.commits.length,1,'Use push time even for old-authored commit');assert.equal(data.failed_runs.length,1,'Old-created failure completed in window');
+assert.equal(reportActivity(data).labels[0],'daily-report');assert.match(reportActivity(data).body,/No pull request activity in the past 24 hours\./);
+const full=Array.from({length:100},(_,i)=>({id:String(i),type:'WatchEvent',created_at:end,payload:{}}));
+await assert.rejects(()=>collectActivity({repository,end,read:async()=>full}),/Event feed capped/);
+console.log('Push-time inclusion, late failure, empty sections and incomplete-feed rejection passed');
